@@ -1,5 +1,8 @@
 # closetracing
 
+## Weather 
+ This is a example of using open tracing with python. This app is a weather app. When you running client it will ask you to input the location for example (Ha Noi or more specify Hoan Kiem, Ha Noi). It will call to map API to get the latitude and longtitude then pass them as parameters to weather API to get weather information.
+
 ## Prequire
 * Python 2.7 or later(I use 2.7 in this example)
 * pip 
