@@ -15,8 +15,6 @@ s.bind((host, port))        # Bind to the port
 
 s.listen(5)                 # Now wait for client connection.
 
-#coordinateValue = coordinate.getCoordinate()
-#print coordinateValue
 if __name__ == '__main__':
 
     with zipkin_ot.Tracer(service_name = 'Weather-server',	# connect opantracing to zipkin server
@@ -39,10 +37,13 @@ if __name__ == '__main__':
             try:
                 text_carrier = json.loads(data)
                 if text_carrier:
+                    # extract the text_carrier recive from client
                     span_context = opentracing.tracer.extract(opentracing.Format.TEXT_MAP, text_carrier)
-                    with opentracing.tracer.start_span('server process', child_of=span_context) as parent_span:            
+                    # create child span of root span name server_span
+                    # syntax opentracing.tracer.start_span(operation_name=XXX, child_of=YYY)
+                    with opentracing.tracer.start_span('server process', child_of=span_context) as server_span:            
                         carrier = {}
-                        opentracing.tracer.inject(parent_span.context, opentracing.Format.TEXT_MAP, carrier)
+                        opentracing.tracer.inject(server_span.context, opentracing.Format.TEXT_MAP, carrier)
                         #print 'carrier ', carrier
             except ValueError:
                 text_carrier = None
@@ -50,18 +51,20 @@ if __name__ == '__main__':
            
             if address and carrier:
                 span_ctx = opentracing.tracer.extract(opentracing.Format.TEXT_MAP, carrier)
+                # create child span of server_span  name getCoordinate_span
                 with opentracing.tracer.start_span('get coordinate', child_of=span_ctx) as getCoordinate_span:
                     coordinateValue = coordinate.getCoordinate(address)
-                    #print coordinateValue
+                    print "coordinateValue ", coordinateValue
                     lat = coordinateValue['lat']
                     lng = coordinateValue['lng']
                     #print 'lat and lng ', lat, lng
                 
+                # create child span of server_span  name getCoordinate_span
                 with opentracing.tracer.start_span('get Weather infor', child_of=span_ctx) as getWeather_span:
                     weatherInfor = json.dumps(weather.getWeather(lat, lng))
                     #print weatherInfor
                     getWeather_span.finish()
-                    parent_span.finish()
+                    server_span.finish()
                     address = None
                     c.send(weatherInfor)
         

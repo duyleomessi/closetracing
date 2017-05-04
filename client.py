@@ -21,17 +21,23 @@ if __name__ == '__main__':
         opentracing.tracer = tracer
 
     while True:
-        with opentracing.tracer.start_span('Weather information') as parent_span:
+        with opentracing.tracer.start_span('Weather information') as root_span:
             text_carrier = {}
-            opentracing.tracer.inject(parent_span.context, opentracing.Format.TEXT_MAP, text_carrier)
-            with opentracing.start_child_span(parent_span, 'Client process') as client_span:
+
+            # inject text_carrier and send to server
+            opentracing.tracer.inject(root_span.context, opentracing.Format.TEXT_MAP, text_carrier)
+            # create child span of root_span name client_span
+            with opentracing.start_child_span(root_span, 'Client process') as client_span:
+                # create child span of client_span name getLocation_span
                 with opentracing.start_child_span(client_span, 'Get location') as getLocation_span:
                     address = raw_input("Enter the address: ")
+                # create child span of client_span name sendLocation_span
                 with opentracing.start_child_span(client_span, 'Send location') as sendLocation_span:
                     message = json.dumps(text_carrier)
+                    # send text_carrier that is injected to server 
                     s.send(message)
                 s.send(address)
         weatherInfor = s.recv(1024)
-        print weatherInfor            
-        parent_span.finish()
+        print "weather infor ", weatherInfor            
+        root_span.finish()
     s.close()
